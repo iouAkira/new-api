@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/QuantumNous/new-api/common"
+
 	"gorm.io/gorm"
 )
 
@@ -26,6 +28,23 @@ func GetUserByAIHubEmployNo(employNo string, matchField string) (*User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+// CreateAIHubSSOUser 为通过规则校验的 AI Hub 工号创建本地普通用户。
+// 密码使用随机值，避免 SSO 自动创建的账户可被猜测密码直接登录。
+func CreateAIHubSSOUser(employNo string) (*User, error) {
+	employNo = strings.TrimSpace(employNo)
+	user := &User{
+		Username:    employNo,
+		Password:    common.GetRandomString(16),
+		DisplayName: employNo,
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+	}
+	if err := user.Insert(0); err != nil {
+		return nil, err
+	}
+	return GetUserByAIHubEmployNo(employNo, "username")
 }
 
 // IsAIHubUserNotFound 隔离 GORM 的 not found 判断，避免 controller 直接依赖 GORM 细节。
