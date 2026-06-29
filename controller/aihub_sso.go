@@ -47,7 +47,7 @@ func AIHubSSOEntry(c *gin.Context) {
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
 				return
 			}
-			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo)
+			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo, cfg.InitialBalance)
 			if err != nil {
 				common.SysLog("AI Hub SSO auto create user failed: " + err.Error())
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
@@ -133,18 +133,27 @@ func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>%s</title>
   <style>
-    body{margin:0;background:#f6f7f9;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-    section{width:min(520px,100%%);background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;box-shadow:0 12px 30px rgba(15,23,42,.08)}
-    h1{margin:0 0 12px;font-size:22px}
-    p{margin:0 0 20px;color:#64748b;line-height:1.7}
-    a{display:inline-block;color:#0f766e;text-decoration:none;font-weight:600}
-    code{background:#eef2f7;border-radius:4px;padding:2px 5px;color:#334155}
+    :root{color-scheme:light dark;--bg:#f8fbff;--fg:#0f172a;--muted:#64748b;--card:rgba(255,255,255,.86);--line:rgba(15,23,42,.08);--brand:#3b82f6;--accent:#9b5cff;--shadow:0 28px 80px rgba(15,23,42,.12)}
+    @media (prefers-color-scheme:dark){:root{--bg:#171717;--fg:#f8fafc;--muted:#9ca3af;--card:rgba(12,17,24,.84);--line:rgba(255,255,255,.09);--shadow:0 28px 80px rgba(0,0,0,.38)}}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 76%% 12%%,rgba(45,212,191,.20),transparent 28%%),radial-gradient(circle at 22%% 24%%,rgba(59,130,246,.18),transparent 26%%),linear-gradient(135deg,var(--bg),rgba(255,255,255,.92));color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    section{width:min(560px,100%%);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:34px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;font-weight:800;letter-spacing:.02em}
+    .logo{width:22px;height:22px;border-radius:50%%;background:conic-gradient(from 180deg,#2dd4bf,#3b82f6,#a855f7,#f472b6,#2dd4bf)}
+    .pill{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:7px 12px;border-radius:999px;background:rgba(59,130,246,.12);color:var(--brand);font-size:13px;font-weight:700}
+    .dot{width:8px;height:8px;border-radius:50%%;background:var(--brand);box-shadow:0 0 18px var(--brand)}
+    h1{margin:0 0 14px;font-size:30px;line-height:1.15;letter-spacing:0}
+    p{margin:0 0 18px;color:var(--muted);line-height:1.75;font-size:15px}
+    code{display:inline-block;background:rgba(100,116,139,.12);border:1px solid var(--line);border-radius:6px;padding:6px 9px;color:var(--fg)}
+    a{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;border-radius:8px;background:var(--fg);color:var(--bg);padding:11px 16px;text-decoration:none;font-weight:800}
   </style>
 </head>
 <body>
   <main>
     <section>
+      <div class="brand"><span class="logo"></span><span>LLM API</span></div>
+      <div class="pill"><span class="dot"></span><span>AI Hub 单点登录</span></div>
       <h1>%s</h1>
       <p>%s</p>
       <p><code>%s</code></p>
@@ -205,15 +214,34 @@ func renderAIHubSSOBootstrap(c *gin.Context, user *model.User, redirect string, 
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Hub SSO 登录中</title>
   <style>
-    body{margin:0;background:#f6f7f9;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-    section{width:min(520px,100%%);background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;box-shadow:0 12px 30px rgba(15,23,42,.08)}
-    h1{margin:0 0 12px;font-size:22px}
-    p{margin:0;color:#64748b;line-height:1.7}
+    :root{color-scheme:light dark;--bg:#f8fbff;--fg:#0f172a;--muted:#64748b;--card:rgba(255,255,255,.86);--line:rgba(15,23,42,.08);--brand:#3b82f6;--accent:#9b5cff;--ok:#10b981;--shadow:0 28px 80px rgba(15,23,42,.12)}
+    @media (prefers-color-scheme:dark){:root{--bg:#171717;--fg:#f8fafc;--muted:#9ca3af;--card:rgba(12,17,24,.84);--line:rgba(255,255,255,.09);--shadow:0 28px 80px rgba(0,0,0,.38)}}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at 76%% 12%%,rgba(45,212,191,.22),transparent 28%%),radial-gradient(circle at 22%% 24%%,rgba(59,130,246,.18),transparent 26%%),linear-gradient(135deg,var(--bg),rgba(255,255,255,.92));color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    section{width:min(580px,100%%);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:34px;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
+    .brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;font-weight:800;letter-spacing:.02em}
+    .logo{width:22px;height:22px;border-radius:50%%;background:conic-gradient(from 180deg,#2dd4bf,#3b82f6,#a855f7,#f472b6,#2dd4bf)}
+    .pill{display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;padding:7px 12px;border-radius:999px;background:rgba(59,130,246,.12);color:var(--brand);font-size:13px;font-weight:700}
+    .dot{width:8px;height:8px;border-radius:50%%;background:var(--ok);box-shadow:0 0 18px var(--ok)}
+    h1{margin:0 0 14px;font-size:32px;line-height:1.15;letter-spacing:0}
+    .gradient{background:linear-gradient(90deg,var(--brand),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+    p{margin:0;color:var(--muted);line-height:1.75;font-size:15px}
+    .bar{height:6px;margin-top:24px;border-radius:999px;background:rgba(100,116,139,.14);overflow:hidden}
+    .bar span{display:block;width:42%%;height:100%%;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--accent));animation:move 1.2s ease-in-out infinite}
+    @keyframes move{0%%{transform:translateX(-110%%)}50%%{transform:translateX(90%%)}100%%{transform:translateX(260%%)}}
   </style>
 </head>
 <body>
-<main><section><h1>%s</h1><p>完成后将自动进入系统。</p></section></main>
+<main>
+  <section>
+    <div class="brand"><span class="logo"></span><span>LLM API</span></div>
+    <div class="pill"><span class="dot"></span><span>AI Hub 单点登录</span></div>
+    <h1><span class="gradient">%s</span></h1>
+    <p>系统正在同步账户、钱包余额和登录状态，完成后将自动进入控制台。</p>
+    <div class="bar"><span></span></div>
+  </section>
+</main>
 <script>
 (function () {
   try {
