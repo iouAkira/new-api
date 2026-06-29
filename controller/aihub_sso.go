@@ -8,15 +8,17 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
-	aihub_sso "github.com/QuantumNous/new-api/service/aihub_sso"
+	aihubsso "github.com/QuantumNous/new-api/service/aihub_sso"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
 const aiHubSSOLoginMethod = "AI_HUB_SSO"
 
+// AIHubSSOEntry 校验 AI Hub token，恢复 new-api 既有 session 结构，
+// 并返回极薄的 bootstrap 页面以同步 SPA 需要的本地登录态。
 func AIHubSSOEntry(c *gin.Context) {
-	cfg := aihub_sso.LoadConfig()
+	cfg := aihubsso.LoadConfig()
 	basePath := cfg.FrontendBasePath
 	if queryBasePath := strings.TrimSpace(c.Query("basePath")); queryBasePath != "" {
 		basePath = queryBasePath
@@ -28,8 +30,8 @@ func AIHubSSOEntry(c *gin.Context) {
 	}
 
 	token := c.Query("ai-hub-token")
-	common.SysLog("AI Hub SSO entry received token=" + aihub_sso.MaskToken(token))
-	verification, err := aihub_sso.VerifyToken(c.Request.Context(), token, cfg)
+	common.SysLog("AI Hub SSO entry received token=" + aihubsso.MaskToken(token))
+	verification, err := aihubsso.VerifyToken(c.Request.Context(), token, cfg)
 	if err != nil {
 		common.SysLog("AI Hub SSO verification failed: " + err.Error())
 		redirectAIHubSSOError(c, basePath, aiHubSSOErrorCode(err))
@@ -57,17 +59,17 @@ func AIHubSSOEntry(c *gin.Context) {
 		return
 	}
 
-	redirect := aihub_sso.CleanRedirect(c.Query("redirect"), basePath)
+	redirect := aihubsso.CleanRedirect(c.Query("redirect"), basePath)
 	renderAIHubSSOBootstrap(c, user, redirect)
 }
 
 func aiHubSSOErrorCode(err error) string {
 	switch {
-	case errors.Is(err, aihub_sso.ErrAppMismatch):
+	case errors.Is(err, aihubsso.ErrAppMismatch):
 		return "sso-invalid"
-	case errors.Is(err, aihub_sso.ErrConfig):
+	case errors.Is(err, aihubsso.ErrConfig):
 		return "sso-config-error"
-	case errors.Is(err, aihub_sso.ErrRequestFailed):
+	case errors.Is(err, aihubsso.ErrRequestFailed):
 		return "sso-timeout"
 	default:
 		return "sso-invalid"
@@ -97,7 +99,7 @@ func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
 }
 
 func redirectAIHubSSOError(c *gin.Context, basePath string, errorCode string) {
-	redirect := aihub_sso.CleanRedirect("/sign-in?ssoError="+errorCode, basePath)
+	redirect := aihubsso.CleanRedirect("/sign-in?ssoError="+errorCode, basePath)
 	c.Redirect(http.StatusFound, redirect)
 	c.Abort()
 }

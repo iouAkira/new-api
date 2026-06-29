@@ -1,4 +1,4 @@
-package aihub_sso
+package aihubsso
 
 import (
 	"os"
@@ -13,6 +13,7 @@ const (
 	defaultMatchField     = "username"
 )
 
+// Config 只承载环境变量配置，避免为了集团 SSO 定制改动上游 Option 结构和管理后台。
 type Config struct {
 	Enabled          bool
 	VerificationURL  string
@@ -24,6 +25,7 @@ type Config struct {
 	Timeout          time.Duration
 }
 
+// LoadConfig 从环境变量读取 AI Hub SSO 配置。
 func LoadConfig() Config {
 	return Config{
 		Enabled:          parseBoolEnv("APP_AUTH_AIHUB_SSO_ENABLED", false),

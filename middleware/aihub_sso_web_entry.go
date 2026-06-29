@@ -4,10 +4,12 @@ import (
 	"net/http"
 	"net/url"
 
-	aihub_sso "github.com/QuantumNous/new-api/service/aihub_sso"
+	aihubsso "github.com/QuantumNous/new-api/service/aihub_sso"
 	"github.com/gin-gonic/gin"
 )
 
+// AIHubSSOWebEntry 将页面 URL 上的 ai-hub-token 转交给后端 SSO 入口，
+// 从而避免改动 default/classic 两套前端。
 func AIHubSSOWebEntry() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method != http.MethodGet {
@@ -21,7 +23,7 @@ func AIHubSSOWebEntry() gin.HandlerFunc {
 			return
 		}
 
-		cfg := aihub_sso.LoadConfig()
+		cfg := aihubsso.LoadConfig()
 		if !cfg.Enabled {
 			c.Next()
 			return

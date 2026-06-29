@@ -1,4 +1,4 @@
-package aihub_sso
+package aihubsso
 
 import (
 	"net/url"
@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// CleanRedirect 只允许站内相对跳转，并移除 ai-hub-token，避免 token 留在历史记录或日志中。
 func CleanRedirect(rawRedirect string, basePath string) string {
 	basePath = normalizeBasePath(basePath)
 	rawRedirect = strings.TrimSpace(rawRedirect)

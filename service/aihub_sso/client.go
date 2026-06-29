@@ -1,4 +1,4 @@
-package aihub_sso
+package aihubsso
 
 import (
 	"context"
@@ -17,6 +17,7 @@ var (
 	ErrRequestFailed = errors.New("ai hub sso verification request failed")
 )
 
+// VerificationResponse 兼容 appId/appSecret 位于顶层或 data 内的两种返回结构。
 type VerificationResponse struct {
 	Code      int              `json:"code"`
 	Status    string           `json:"status"`
@@ -25,6 +26,7 @@ type VerificationResponse struct {
 	AppSecret string           `json:"appSecret"`
 }
 
+// VerificationData 是 tokenVerification 返回的身份载荷。
 type VerificationData struct {
 	Valid     bool   `json:"valid"`
 	EmployNo  string `json:"employNo"`
@@ -32,6 +34,7 @@ type VerificationData struct {
 	AppSecret string `json:"appSecret"`
 }
 
+// VerifyToken 按 AI Hub 文档使用 GET 调用 tokenVerification，并通过 Header 传 token。
 func VerifyToken(ctx context.Context, token string, cfg Config) (*VerificationResponse, error) {
 	if !cfg.Enabled {
 		return nil, fmt.Errorf("%w: disabled", ErrConfig)

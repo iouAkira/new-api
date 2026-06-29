@@ -1,9 +1,10 @@
-package aihub_sso
+package aihubsso
 
 import (
 	"strings"
 )
 
+// NormalizeToken 兼容文档推荐的裸 token 和历史 Bearer 写法。
 func NormalizeToken(token string) string {
 	token = strings.TrimSpace(token)
 	if len(token) >= 7 && strings.EqualFold(token[:7], "Bearer ") {
@@ -12,6 +13,7 @@ func NormalizeToken(token string) string {
 	return token
 }
 
+// ValidateVerificationResponse 在建立本地会话前执行必要的身份与应用范围校验。
 func ValidateVerificationResponse(resp *VerificationResponse, cfg Config) error {
 	if resp == nil {
 		return ErrInvalid
@@ -41,6 +43,7 @@ func ValidateVerificationResponse(resp *VerificationResponse, cfg Config) error 
 	return nil
 }
 
+// MaskToken 用于联调日志脱敏，避免暴露完整 SSO token。
 func MaskToken(token string) string {
 	token = NormalizeToken(token)
 	if len(token) <= 8 {
