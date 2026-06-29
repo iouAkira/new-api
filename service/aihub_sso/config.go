@@ -11,6 +11,7 @@ const (
 	defaultTimeoutSeconds = 5
 	defaultBasePath       = "/"
 	defaultMatchField     = "username"
+	defaultInitialBalance = 300
 )
 
 // Config 只承载环境变量配置，避免为了集团 SSO 定制改动上游 Option 结构和管理后台。
@@ -22,6 +23,7 @@ type Config struct {
 	AppSecret        string
 	UserMatchField   string
 	RequireAppCheck  bool
+	InitialBalance   int
 	Timeout          time.Duration
 }
 
@@ -35,6 +37,7 @@ func LoadConfig() Config {
 		AppSecret:        strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_APP_SECRET")),
 		UserMatchField:   normalizeMatchField(os.Getenv("APP_AUTH_AIHUB_SSO_USER_MATCH_FIELD")),
 		RequireAppCheck:  parseBoolEnv("APP_AUTH_AIHUB_SSO_REQUIRE_APP_CHECK", true),
+		InitialBalance:   parseIntEnv("APP_AUTH_AIHUB_SSO_INITIAL_BALANCE", defaultInitialBalance),
 		Timeout:          time.Duration(parseIntEnv("APP_AUTH_AIHUB_SSO_TIMEOUT_SECONDS", defaultTimeoutSeconds)) * time.Second,
 	}
 }
