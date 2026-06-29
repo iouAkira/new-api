@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"gorm.io/gorm"
 )
@@ -33,7 +34,7 @@ func GetUserByAIHubEmployNo(employNo string, matchField string) (*User, error) {
 
 // CreateAIHubSSOUser 为通过规则校验的 AI Hub 工号创建本地普通用户。
 // 密码使用随机值，避免 SSO 自动创建的账户可被猜测密码直接登录。
-func CreateAIHubSSOUser(employNo string, initialBalance int) (*User, error) {
+func CreateAIHubSSOUser(employNo string, initialBalanceRMB int) (*User, error) {
 	employNo = strings.TrimSpace(employNo)
 	user := &User{
 		Username:    employNo,
@@ -45,14 +46,21 @@ func CreateAIHubSSOUser(employNo string, initialBalance int) (*User, error) {
 	if err := user.Insert(0); err != nil {
 		return nil, err
 	}
-	initialQuota := int(float64(initialBalance) * common.QuotaPerUnit)
+	initialQuota := aiHubSSOInitialBalanceQuota(initialBalanceRMB)
 	if initialQuota > 0 {
 		if err := IncreaseUserQuota(user.Id, initialQuota, true); err != nil {
 			return nil, err
 		}
-		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("AI Hub SSO 自动开户赠送 %d 元钱包余额", initialBalance))
+		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("AI Hub SSO 自动开户赠送 %d 元人民币钱包余额", initialBalanceRMB))
 	}
 	return GetUserByAIHubEmployNo(employNo, "username")
+}
+
+func aiHubSSOInitialBalanceQuota(initialBalanceRMB int) int {
+	if initialBalanceRMB <= 0 || operation_setting.USDExchangeRate <= 0 {
+		return 0
+	}
+	return int(float64(initialBalanceRMB) / operation_setting.USDExchangeRate * common.QuotaPerUnit)
 }
 
 // IsAIHubUserNotFound 隔离 GORM 的 not found 判断，避免 controller 直接依赖 GORM 细节。
