@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"strings"
 
@@ -25,7 +26,7 @@ func AIHubSSOEntry(c *gin.Context) {
 	}
 
 	if !cfg.Enabled {
-		redirectAIHubSSOError(c, basePath, "sso-disabled")
+		renderAIHubSSOErrorPage(c, basePath, "sso-disabled")
 		return
 	}
 
@@ -34,33 +35,44 @@ func AIHubSSOEntry(c *gin.Context) {
 	verification, err := aihubsso.VerifyToken(c.Request.Context(), token, cfg)
 	if err != nil {
 		common.SysLog("AI Hub SSO verification failed: " + err.Error())
-		redirectAIHubSSOError(c, basePath, aiHubSSOErrorCode(err))
+		renderAIHubSSOErrorPage(c, basePath, aiHubSSOErrorCode(err))
 		return
 	}
 
+	userCreated := false
 	user, err := model.GetUserByAIHubEmployNo(verification.Data.EmployNo, cfg.UserMatchField)
 	if err != nil {
 		if model.IsAIHubUserNotFound(err) {
-			redirectAIHubSSOError(c, basePath, "no-permission")
+			if cfg.UserMatchField != "username" || !validAIHubAutoCreateUsername(verification.Data.EmployNo) {
+				renderAIHubSSOErrorPage(c, basePath, "no-permission")
+				return
+			}
+			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo)
+			if err != nil {
+				common.SysLog("AI Hub SSO auto create user failed: " + err.Error())
+				renderAIHubSSOErrorPage(c, basePath, "no-permission")
+				return
+			}
+			userCreated = true
+		} else {
+			common.SysLog("AI Hub SSO user lookup failed: " + err.Error())
+			renderAIHubSSOErrorPage(c, basePath, "sso-invalid")
 			return
 		}
-		common.SysLog("AI Hub SSO user lookup failed: " + err.Error())
-		redirectAIHubSSOError(c, basePath, "sso-invalid")
-		return
 	}
 	if user.Status != common.UserStatusEnabled {
-		redirectAIHubSSOError(c, basePath, "user-disabled")
+		renderAIHubSSOErrorPage(c, basePath, "user-disabled")
 		return
 	}
 
 	if err := setupAIHubSSOSession(c, user); err != nil {
 		common.SysLog("AI Hub SSO session save failed: " + err.Error())
-		redirectAIHubSSOError(c, basePath, "sso-invalid")
+		renderAIHubSSOErrorPage(c, basePath, "sso-invalid")
 		return
 	}
 
 	redirect := aihubsso.CleanRedirect(c.Query("redirect"), basePath)
-	renderAIHubSSOBootstrap(c, user, redirect)
+	renderAIHubSSOBootstrap(c, user, redirect, userCreated)
 }
 
 func aiHubSSOErrorCode(err error) string {
@@ -98,13 +110,73 @@ func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
 	return nil
 }
 
-func redirectAIHubSSOError(c *gin.Context, basePath string, errorCode string) {
-	redirect := aihubsso.CleanRedirect("/sign-in?ssoError="+errorCode, basePath)
-	c.Redirect(http.StatusFound, redirect)
+func validAIHubAutoCreateUsername(username string) bool {
+	username = strings.TrimSpace(username)
+	if len(username) != 8 {
+		return false
+	}
+	digits := 0
+	for _, r := range username {
+		if r >= '0' && r <= '9' {
+			digits++
+		}
+	}
+	return digits >= 6
+}
+
+func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) {
+	homeURL := aihubsso.CleanRedirect("/", basePath)
+	title, message := aiHubSSOErrorText(errorCode)
+	htmlBody := fmt.Sprintf(`<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>%s</title>
+  <style>
+    body{margin:0;background:#f6f7f9;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    section{width:min(520px,100%%);background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;box-shadow:0 12px 30px rgba(15,23,42,.08)}
+    h1{margin:0 0 12px;font-size:22px}
+    p{margin:0 0 20px;color:#64748b;line-height:1.7}
+    a{display:inline-block;color:#0f766e;text-decoration:none;font-weight:600}
+    code{background:#eef2f7;border-radius:4px;padding:2px 5px;color:#334155}
+  </style>
+</head>
+<body>
+  <main>
+    <section>
+      <h1>%s</h1>
+      <p>%s</p>
+      <p><code>%s</code></p>
+      <a href="%s">返回首页</a>
+    </section>
+  </main>
+</body>
+</html>`, html.EscapeString(title), html.EscapeString(title), html.EscapeString(message), html.EscapeString(errorCode), html.EscapeString(homeURL))
+
+	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlBody))
 	c.Abort()
 }
 
-func renderAIHubSSOBootstrap(c *gin.Context, user *model.User, redirect string) {
+func aiHubSSOErrorText(errorCode string) (string, string) {
+	switch errorCode {
+	case "no-permission":
+		return "无法创建或匹配用户", "AI Hub 身份校验已通过，但本地不存在对应用户，且工号不满足自动创建规则。自动创建要求用户名为 8 位字符，并且至少包含 6 位数字。"
+	case "user-disabled":
+		return "用户已被禁用", "AI Hub 身份校验已通过，但对应的本地用户已被禁用，请联系管理员处理。"
+	case "sso-config-error":
+		return "SSO 配置错误", "当前系统的 AI Hub SSO 配置不完整或不可用，请检查 tokenVerification 地址和相关环境变量。"
+	case "sso-timeout":
+		return "AI Hub 校验超时", "系统暂时无法连接 AI Hub tokenVerification 服务，请稍后重试或联系管理员。"
+	case "sso-disabled":
+		return "SSO 未启用", "当前系统未启用 AI Hub SSO，请检查 APP_AUTH_AIHUB_SSO_ENABLED 配置。"
+	default:
+		return "SSO 登录失败", "AI Hub token 无效、已过期，或返回内容未通过系统校验，请重新从 AI Hub 发起登录。"
+	}
+}
+
+func renderAIHubSSOBootstrap(c *gin.Context, user *model.User, redirect string, userCreated bool) {
 	userData := map[string]interface{}{
 		"id":           user.Id,
 		"username":     user.Username,
@@ -116,25 +188,47 @@ func renderAIHubSSOBootstrap(c *gin.Context, user *model.User, redirect string) 
 	userJSON, err := common.Marshal(userData)
 	if err != nil {
 		common.SysLog("AI Hub SSO bootstrap marshal failed: " + err.Error())
-		redirectAIHubSSOError(c, "/", "sso-invalid")
+		renderAIHubSSOErrorPage(c, "/", "sso-invalid")
 		return
 	}
 
+	message := "正在登录..."
+	delay := 100
+	if userCreated {
+		message = "用户不存在，正在创建用户..."
+		delay = 900
+	}
+
 	htmlBody := fmt.Sprintf(`<!doctype html>
-<html>
-<head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>Signing in</title></head>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Hub SSO 登录中</title>
+  <style>
+    body{margin:0;background:#f6f7f9;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    section{width:min(520px,100%%);background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:28px;box-shadow:0 12px 30px rgba(15,23,42,.08)}
+    h1{margin:0 0 12px;font-size:22px}
+    p{margin:0;color:#64748b;line-height:1.7}
+  </style>
+</head>
 <body>
+<main><section><h1>%s</h1><p>完成后将自动进入系统。</p></section></main>
 <script>
 (function () {
   try {
     localStorage.setItem('uid', %q);
     localStorage.setItem('user', %q);
   } catch (e) {}
-  location.replace(%q);
+  setTimeout(function () {
+    location.replace(%q);
+  }, %d);
 })();
 </script>
 </body>
-</html>`, fmt.Sprintf("%d", user.Id), string(userJSON), redirect)
+</html>`, html.EscapeString(message), fmt.Sprintf("%d", user.Id), string(userJSON), redirect, delay)
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlBody))
 	c.Abort()
