@@ -47,7 +47,7 @@ func AIHubSSOEntry(c *gin.Context) {
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
 				return
 			}
-			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo, cfg.InitialBalance)
+			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo, cfg.InitialBalanceRMB)
 			if err != nil {
 				common.SysLog("AI Hub SSO auto create user failed: " + err.Error())
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
