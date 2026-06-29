@@ -112,7 +112,7 @@ func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
 
 func validAIHubAutoCreateUsername(username string) bool {
 	username = strings.TrimSpace(username)
-	if len(username) != 8 {
+	if len(username) != 10 {
 		return false
 	}
 	digits := 0
@@ -121,11 +121,10 @@ func validAIHubAutoCreateUsername(username string) bool {
 			digits++
 		}
 	}
-	return digits >= 6
+	return digits >= 8
 }
 
 func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) {
-	homeURL := aihubsso.CleanRedirect("/", basePath)
 	title, message := aiHubSSOErrorText(errorCode)
 	htmlBody := fmt.Sprintf(`<!doctype html>
 <html lang="zh-CN">
@@ -149,11 +148,10 @@ func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) 
       <h1>%s</h1>
       <p>%s</p>
       <p><code>%s</code></p>
-      <a href="%s">返回首页</a>
     </section>
   </main>
 </body>
-</html>`, html.EscapeString(title), html.EscapeString(title), html.EscapeString(message), html.EscapeString(errorCode), html.EscapeString(homeURL))
+</html>`, html.EscapeString(title), html.EscapeString(title), html.EscapeString(message), html.EscapeString(errorCode))
 
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(htmlBody))
 	c.Abort()
@@ -162,7 +160,7 @@ func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) 
 func aiHubSSOErrorText(errorCode string) (string, string) {
 	switch errorCode {
 	case "no-permission":
-		return "无法创建或匹配用户", "AI Hub 身份校验已通过，但本地不存在对应用户，且工号不满足自动创建规则。自动创建要求用户名为 8 位字符，并且至少包含 6 位数字。"
+		return "无法创建或匹配用户", "AI Hub 身份校验已通过，但本地不存在对应用户，且工号不满足自动创建规则。请联系管理员处理。"
 	case "user-disabled":
 		return "用户已被禁用", "AI Hub 身份校验已通过，但对应的本地用户已被禁用，请联系管理员处理。"
 	case "sso-config-error":
