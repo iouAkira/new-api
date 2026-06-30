@@ -11,6 +11,7 @@ const (
 	defaultTimeoutSeconds    = 5
 	defaultBasePath          = "/"
 	defaultMatchField        = "username"
+	defaultGroup             = "Other"
 	defaultInitialBalanceRMB = 300
 )
 
@@ -22,6 +23,7 @@ type Config struct {
 	AppID             string
 	AppSecret         string
 	UserMatchField    string
+	DefaultGroup      string
 	RequireAppCheck   bool
 	InitialBalanceRMB int
 	Timeout           time.Duration
@@ -36,6 +38,7 @@ func LoadConfig() Config {
 		AppID:             strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_APP_ID")),
 		AppSecret:         strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_APP_SECRET")),
 		UserMatchField:    normalizeMatchField(os.Getenv("APP_AUTH_AIHUB_SSO_USER_MATCH_FIELD")),
+		DefaultGroup:      normalizeDefaultGroup(os.Getenv("APP_AUTH_AIHUB_SSO_DEFAULT_GROUP")),
 		RequireAppCheck:   parseBoolEnv("APP_AUTH_AIHUB_SSO_REQUIRE_APP_CHECK", true),
 		InitialBalanceRMB: parseIntEnv("APP_AUTH_AIHUB_SSO_INITIAL_BALANCE_RMB", defaultInitialBalanceRMB),
 		Timeout:           time.Duration(parseIntEnv("APP_AUTH_AIHUB_SSO_TIMEOUT_SECONDS", defaultTimeoutSeconds)) * time.Second,
@@ -75,6 +78,14 @@ func normalizeMatchField(value string) string {
 	default:
 		return defaultMatchField
 	}
+}
+
+func normalizeDefaultGroup(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return defaultGroup
+	}
+	return value
 }
 
 func normalizeBasePath(value string) string {
