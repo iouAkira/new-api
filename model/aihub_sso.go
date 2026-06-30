@@ -34,12 +34,12 @@ func GetUserByAIHubEmployNo(employNo string, matchField string) (*User, error) {
 
 // CreateAIHubSSOUser 为通过规则校验的 AI Hub 工号创建本地普通用户。
 // 密码使用随机值，避免 SSO 自动创建的账户可被猜测密码直接登录。
-func CreateAIHubSSOUser(employNo string, initialBalanceRMB int, group string) (*User, error) {
+func CreateAIHubSSOUser(employNo string, displayName string, initialBalanceRMB int, group string) (*User, error) {
 	employNo = strings.TrimSpace(employNo)
 	user := &User{
 		Username:    employNo,
 		Password:    common.GetRandomString(16),
-		DisplayName: employNo,
+		DisplayName: aiHubSSODisplayName(displayName, employNo),
 		Role:        common.RoleCommonUser,
 		Status:      common.UserStatusEnabled,
 		Group:       group,
@@ -58,6 +58,18 @@ func CreateAIHubSSOUser(employNo string, initialBalanceRMB int, group string) (*
 		return nil, err
 	}
 	return GetUserByAIHubEmployNo(employNo, "username")
+}
+
+func aiHubSSODisplayName(displayName string, employNo string) string {
+	displayName = strings.TrimSpace(displayName)
+	if displayName == "" {
+		displayName = strings.TrimSpace(employNo)
+	}
+	runes := []rune(displayName)
+	if len(runes) > UserNameMaxLength {
+		return string(runes[:UserNameMaxLength])
+	}
+	return displayName
 }
 
 func createAIHubSSODefaultToken(user *User, group string) error {

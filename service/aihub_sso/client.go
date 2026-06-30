@@ -30,6 +30,7 @@ type VerificationResponse struct {
 type VerificationData struct {
 	Valid     bool   `json:"valid"`
 	EmployNo  string `json:"employNo"`
+	UserName  string `json:"userName"`
 	AppID     string `json:"appId"`
 	AppSecret string `json:"appSecret"`
 }
@@ -54,6 +55,8 @@ func VerifyToken(ctx context.Context, token string, cfg Config) (*VerificationRe
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("token", normalizedToken)
+	req.Header.Set("appId", cfg.AppID)
+	req.Header.Set("appSecret", cfg.AppSecret)
 
 	client := &http.Client{Timeout: cfg.Timeout}
 	resp, err := client.Do(req)
