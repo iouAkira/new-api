@@ -38,6 +38,7 @@ func AIHubSSOEntry(c *gin.Context) {
 		renderAIHubSSOErrorPage(c, basePath, aiHubSSOErrorCode(err))
 		return
 	}
+	common.SysLog(fmt.Sprintf("AI Hub SSO verification passed employNo=%s matchField=%s", verification.Data.EmployNo, cfg.UserMatchField))
 
 	userCreated := false
 	user, err := model.GetUserByAIHubEmployNo(verification.Data.EmployNo, cfg.UserMatchField)
@@ -56,10 +57,11 @@ func AIHubSSOEntry(c *gin.Context) {
 			userCreated = true
 		} else {
 			common.SysLog("AI Hub SSO user lookup failed: " + err.Error())
-			renderAIHubSSOErrorPage(c, basePath, "sso-invalid")
+			renderAIHubSSOErrorPage(c, basePath, "sso-user-lookup-error")
 			return
 		}
 	}
+	common.SysLog(fmt.Sprintf("AI Hub SSO matched local user id=%d username=%s status=%d role=%d group=%s", user.Id, user.Username, user.Status, user.Role, user.Group))
 	if user.Status != common.UserStatusEnabled {
 		renderAIHubSSOErrorPage(c, basePath, "user-disabled")
 		return
@@ -67,7 +69,7 @@ func AIHubSSOEntry(c *gin.Context) {
 
 	if err := setupAIHubSSOSession(c, user); err != nil {
 		common.SysLog("AI Hub SSO session save failed: " + err.Error())
-		renderAIHubSSOErrorPage(c, basePath, "sso-invalid")
+		renderAIHubSSOErrorPage(c, basePath, "sso-session-error")
 		return
 	}
 
@@ -78,7 +80,7 @@ func AIHubSSOEntry(c *gin.Context) {
 func aiHubSSOErrorCode(err error) string {
 	switch {
 	case errors.Is(err, aihubsso.ErrAppMismatch):
-		return "sso-invalid"
+		return "sso-app-mismatch"
 	case errors.Is(err, aihubsso.ErrConfig):
 		return "sso-config-error"
 	case errors.Is(err, aihubsso.ErrRequestFailed):
@@ -178,6 +180,14 @@ func aiHubSSOErrorText(errorCode string) (string, string) {
 		return "AI Hub 校验超时", "系统暂时无法连接 AI Hub tokenVerification 服务，请稍后重试或联系管理员。"
 	case "sso-disabled":
 		return "SSO 未启用", "当前系统未启用 AI Hub SSO，请检查 APP_AUTH_AIHUB_SSO_ENABLED 配置。"
+	case "sso-app-mismatch":
+		return "SSO 应用校验失败", "AI Hub 身份校验已返回，但返回的 appId 或 appSecret 与本地配置不一致。"
+	case "sso-user-lookup-error":
+		return "SSO 用户查询失败", "AI Hub 身份校验已通过，但查询本地用户时发生异常，请查看服务端日志。"
+	case "sso-session-error":
+		return "SSO 会话写入失败", "AI Hub 身份校验和本地用户匹配已通过，但系统写入登录会话失败，请检查 Cookie 或 Session 配置。"
+	case "sso-bootstrap-error":
+		return "SSO 登录态同步失败", "AI Hub 身份校验和本地用户匹配已通过，但生成前端登录态时失败，请查看服务端日志。"
 	default:
 		return "SSO 登录失败", "AI Hub token 无效、已过期，或返回内容未通过系统校验，请重新从 AI Hub 发起登录。"
 	}
@@ -195,7 +205,7 @@ func renderAIHubSSOBootstrap(c *gin.Context, user *model.User, redirect string, 
 	userJSON, err := common.Marshal(userData)
 	if err != nil {
 		common.SysLog("AI Hub SSO bootstrap marshal failed: " + err.Error())
-		renderAIHubSSOErrorPage(c, "/", "sso-invalid")
+		renderAIHubSSOErrorPage(c, "/", "sso-bootstrap-error")
 		return
 	}
 
