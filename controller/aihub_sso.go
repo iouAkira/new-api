@@ -44,7 +44,7 @@ func AIHubSSOEntry(c *gin.Context) {
 	user, err := model.GetUserByAIHubEmployNo(verification.Data.EmployNo, cfg.UserMatchField)
 	if err != nil {
 		if model.IsAIHubUserNotFound(err) {
-			if cfg.UserMatchField != "username" || !validAIHubAutoCreateUsername(verification.Data.EmployNo) {
+			if !validAIHubAutoCreateUsername(verification.Data.EmployNo) {
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
 				return
 			}
