@@ -4,13 +4,14 @@ import (
 	"strings"
 )
 
-// NormalizeToken 兼容文档推荐的裸 token 和历史 Bearer 写法。
+// NormalizeToken 兼容文档推荐的裸 token、历史 Bearer 写法，
+// 以及跳转 URL 中未编码的 + 被 query 解析成空格的情况。
 func NormalizeToken(token string) string {
 	token = strings.TrimSpace(token)
 	if len(token) >= 7 && strings.EqualFold(token[:7], "Bearer ") {
-		return strings.TrimSpace(token[7:])
+		token = strings.TrimSpace(token[7:])
 	}
-	return token
+	return strings.ReplaceAll(token, " ", "+")
 }
 
 // ValidateVerificationResponse 在建立本地会话前执行必要的身份与应用范围校验。
