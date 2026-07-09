@@ -114,7 +114,7 @@ func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
 
 func validAIHubAutoCreateUsername(username string) bool {
 	username = strings.TrimSpace(username)
-	if len(username) != 10 {
+	if len(username) < 8 || len(username) > 10 {
 		return false
 	}
 	digits := 0
@@ -123,7 +123,7 @@ func validAIHubAutoCreateUsername(username string) bool {
 			digits++
 		}
 	}
-	return digits >= 8
+	return digits >= 6
 }
 
 func renderAIHubSSOErrorPage(c *gin.Context, basePath string, errorCode string) {
