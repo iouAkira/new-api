@@ -23,7 +23,7 @@ tiktoken_cache
 plans
 .claude
 .cursor
-
+.codegraph
 electron/node_modules
 electron/dist
 /data/
@@ -39,4 +39,3 @@ skills-lock.json
 .local-tests/
 service/relayconvert/chat_responses_live_local_test.go
 service/openaicompat/chat_responses_live_local_test.go
-.codegraph
