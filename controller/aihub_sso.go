@@ -9,8 +9,8 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/service"
 	aihubsso "github.com/QuantumNous/new-api/service/aihub_sso"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -91,17 +91,19 @@ func aiHubSSOErrorCode(err error) string {
 }
 
 func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
-	model.UpdateUserLastLoginAt(user.Id)
-	session := sessions.Default(c)
-	session.Set("id", user.Id)
-	session.Set("username", user.Username)
-	session.Set("role", user.Role)
-	session.Set("status", user.Status)
-	session.Set("group", user.Group)
-	session.Set("login_type", aiHubSSOLoginMethod)
-	if err := session.Save(); err != nil {
+	bundle, err := service.CreateLoginSession(
+		user.Id,
+		aiHubSSOLoginMethod,
+		c.ClientIP(),
+		c.Request.UserAgent(),
+	)
+	if err != nil {
 		return err
 	}
+
+	model.UpdateUserLastLoginAt(user.Id)
+	service.WriteRefreshCookie(c, bundle.RefreshToken)
+	setAuthNoStore(c)
 
 	model.RecordLoginLog(user.Id, user.Username, "Logged in successfully via AI Hub SSO", c.ClientIP(), "login", map[string]interface{}{
 		"method": aiHubSSOLoginMethod,
