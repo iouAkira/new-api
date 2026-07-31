@@ -25,7 +25,7 @@ tiktoken_cache
 plans
 .claude
 .cursor
-
+.codegraph
 electron/node_modules
 electron/dist
 data/
@@ -36,4 +36,3 @@ data/
 token_estimator_test.go
 skills-lock.json
 .playwright-mcp
-.codegraph
