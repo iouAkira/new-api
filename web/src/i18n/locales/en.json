@@ -1,5 +1,14 @@
 {
   "translation": {
+    "Model Nodes": "Private Deployment",
+    "Deployment Nodes": "Deployment Nodes",
+    "By Server": "Deployment Nodes",
+    "By Model": "Model Deployment",
+    "Distinct Nodes": "Server Nodes",
+    "Distinct Models": "Model Types",
+    "Search model / IP": "Search model / IP",
+    "No deployment nodes found.": "No deployment nodes found.",
+    "No internal model deployment nodes matched the current filter.": "No internal model deployment nodes matched the current filter.",
     "360": "360",
     "1000": "1000",
     "10000": "10000",
