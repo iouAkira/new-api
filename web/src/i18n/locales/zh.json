@@ -1,5 +1,14 @@
 {
   "translation": {
+    "Model Nodes": "私有化部署",
+    "Deployment Nodes": "部署节点",
+    "By Server": "部署节点视图",
+    "By Model": "模型部署清单",
+    "Distinct Nodes": "服务器节点",
+    "Distinct Models": "模型种类",
+    "Search model / IP": "搜索 模型名 / IP",
+    "No deployment nodes found.": "未找到部署节点",
+    "No internal model deployment nodes matched the current filter.": "没有匹配当前过滤条件的内部模型部署节点",
     "360": "360",
     "1000": "1000",
     "10000": "10000",

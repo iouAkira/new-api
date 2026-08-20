@@ -24,6 +24,7 @@ func SetWebRouter(router *gin.Engine, assets WebAssets) {
 
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
+	router.Use(middleware.AIHubSSOWebEntry())
 	router.Use(middleware.Cache())
 	router.Use(static.Serve("/", frontendFS))
 	router.NoRoute(func(c *gin.Context) {
