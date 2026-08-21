@@ -1,6 +1,7 @@
 package aihubsso
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -35,7 +36,7 @@ type VerificationData struct {
 	AppSecret string `json:"appSecret"`
 }
 
-// VerifyToken 按 AI Hub 文档使用 GET 调用 tokenVerification，并通过 Header 传 token。
+// VerifyToken 通过 POST 调用 AI Hub tokenVerification，并在 JSON 请求体中传递验证信息。
 func VerifyToken(ctx context.Context, token string, cfg Config) (*VerificationResponse, error) {
 	if !cfg.Enabled {
 		return nil, fmt.Errorf("%w: disabled", ErrConfig)
@@ -49,14 +50,24 @@ func VerifyToken(ctx context.Context, token string, cfg Config) (*VerificationRe
 		return nil, ErrInvalid
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.VerificationURL, nil)
+	requestBody, err := common.Marshal(struct {
+		Token     string `json:"token"`
+		AppID     string `json:"appId"`
+		AppSecret string `json:"appSecret"`
+	}{
+		Token:     normalizedToken,
+		AppID:     cfg.AppID,
+		AppSecret: cfg.AppSecret,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrConfig, err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, cfg.VerificationURL, bytes.NewReader(requestBody))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrConfig, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("token", normalizedToken)
-	req.Header.Set("appId", cfg.AppID)
-	req.Header.Set("appSecret", cfg.AppSecret)
 
 	client := &http.Client{Timeout: cfg.Timeout}
 	resp, err := client.Do(req)
