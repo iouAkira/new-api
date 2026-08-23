@@ -1,6 +1,7 @@
 package aihubsso
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -19,7 +20,10 @@ func ValidateVerificationResponse(resp *VerificationResponse, cfg Config) error 
 	if resp == nil {
 		return ErrInvalid
 	}
-	if resp.Code != 200 || !strings.EqualFold(resp.Status, "success") || !resp.Data.Valid || strings.TrimSpace(resp.Data.EmployNo) == "" {
+	if resp.Code != 200 || !strings.EqualFold(resp.Status, "success") || strings.TrimSpace(resp.Data.EmployNo) == "" {
+		if respMsg := strings.TrimSpace(resp.RespMsg); respMsg != "" {
+			return fmt.Errorf("%w: %s", ErrInvalid, respMsg)
+		}
 		return ErrInvalid
 	}
 

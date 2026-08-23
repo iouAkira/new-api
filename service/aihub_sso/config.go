@@ -19,6 +19,8 @@ const (
 type Config struct {
 	Enabled           bool
 	VerificationURL   string
+	AccessTokenURL    string
+	UserInfoURL       string
 	FrontendBasePath  string
 	AppID             string
 	AppSecret         string
@@ -34,6 +36,8 @@ func LoadConfig() Config {
 	return Config{
 		Enabled:           parseBoolEnv("APP_AUTH_AIHUB_SSO_ENABLED", false),
 		VerificationURL:   strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_VERIFICATION_URL")),
+		AccessTokenURL:    strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_ACCESS_TOKEN_URL")),
+		UserInfoURL:       strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_USER_INFO_URL")),
 		FrontendBasePath:  normalizeBasePath(os.Getenv("APP_AUTH_AIHUB_SSO_FRONTEND_BASE_PATH")),
 		AppID:             strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_APP_ID")),
 		AppSecret:         strings.TrimSpace(os.Getenv("APP_AUTH_AIHUB_SSO_APP_SECRET")),

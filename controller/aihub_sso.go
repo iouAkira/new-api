@@ -48,7 +48,13 @@ func AIHubSSOEntry(c *gin.Context) {
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")
 				return
 			}
-			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo, verification.Data.UserName, cfg.InitialBalanceRMB, cfg.DefaultGroup)
+			userInfo, userInfoErr := aihubsso.FetchUserInfo(c.Request.Context(), verification.Data.EmployNo, cfg)
+			if userInfoErr != nil {
+				common.SysLog("AI Hub SSO user info lookup failed: " + userInfoErr.Error())
+				renderAIHubSSOErrorPage(c, basePath, aiHubSSOErrorCode(userInfoErr))
+				return
+			}
+			user, err = model.CreateAIHubSSOUser(verification.Data.EmployNo, userInfo.UserName, cfg.InitialBalanceRMB, cfg.DefaultGroup)
 			if err != nil {
 				common.SysLog("AI Hub SSO auto create user failed: " + err.Error())
 				renderAIHubSSOErrorPage(c, basePath, "no-permission")

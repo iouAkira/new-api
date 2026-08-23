@@ -37,7 +37,7 @@ func TestVerifyTokenPostsCredentialsInJSONBody(t *testing.T) {
 		}, body)
 
 		w.Header().Set("Content-Type", "application/json")
-		_, err := w.Write([]byte(`{"code":200,"status":"success","data":{"valid":true,"employNo":"E001"}}`))
+		_, err := w.Write([]byte(`{"code":200,"status":"success","message":"操作成功","data":{"expiresIn":null,"employNo":"2205090261","userName":null,"userId":null,"appId":null,"appSecret":null,"agentId":null,"valid":null,"access_token":null}}`))
 		require.NoError(t, err)
 	}))
 	defer server.Close()
@@ -52,5 +52,49 @@ func TestVerifyTokenPostsCredentialsInJSONBody(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, verification)
-	assert.Equal(t, "E001", verification.Data.EmployNo)
+	assert.Equal(t, "2205090261", verification.Data.EmployNo)
+}
+
+func TestVerifyTokenRejectsFailureResponses(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		body    string
+		respMsg string
+	}{
+		{
+			name:    "token does not exist",
+			body:    `{"datas":null,"resp_code":0,"resp_msg":"当前token不存在"}`,
+			respMsg: "当前token不存在",
+		},
+		{
+			name:    "token is incorrect",
+			body:    `{"datas":null,"resp_code":0,"resp_msg":"当前token不正确"}`,
+			respMsg: "当前token不正确",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, err := w.Write([]byte(tt.body))
+				require.NoError(t, err)
+			}))
+			defer server.Close()
+
+			verification, err := VerifyToken(context.Background(), "token", Config{
+				Enabled:         true,
+				VerificationURL: server.URL,
+				Timeout:         time.Second,
+			})
+
+			assert.ErrorIs(t, err, ErrInvalid)
+			assert.ErrorContains(t, err, tt.respMsg)
+			assert.Nil(t, verification)
+		})
+	}
 }

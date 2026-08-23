@@ -25,6 +25,8 @@ type VerificationResponse struct {
 	Data      VerificationData `json:"data"`
 	AppID     string           `json:"appId"`
 	AppSecret string           `json:"appSecret"`
+	RespCode  int              `json:"resp_code"`
+	RespMsg   string           `json:"resp_msg"`
 }
 
 // VerificationData 是 tokenVerification 返回的身份载荷。
