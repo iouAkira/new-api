@@ -85,6 +85,10 @@ func AIHubSSOEntry(c *gin.Context) {
 
 func aiHubSSOErrorCode(err error) string {
 	switch {
+	case errors.Is(err, model.ErrUserSessionLimit):
+		return "sso-session-limit"
+	case errors.Is(err, model.ErrUserSessionIssuanceLimit):
+		return "sso-session-rate-limit"
 	case errors.Is(err, aihubsso.ErrAppMismatch):
 		return "sso-app-mismatch"
 	case errors.Is(err, aihubsso.ErrConfig):
@@ -97,14 +101,34 @@ func aiHubSSOErrorCode(err error) string {
 }
 
 func setupAIHubSSOSession(c *gin.Context, user *model.User) error {
-	bundle, err := service.CreateLoginSession(
-		user.Id,
-		aiHubSSOLoginMethod,
-		c.ClientIP(),
-		c.Request.UserAgent(),
-	)
-	if err != nil {
-		return err
+	var bundle *service.AuthBundle
+	if rawRefreshToken, cookieErr := c.Cookie(service.RefreshCookieName); cookieErr == nil {
+		if sid, ok := service.RefreshTokenSID(rawRefreshToken); ok {
+			currentSession, sessionErr := model.GetUserSessionBySID(sid)
+			if sessionErr == nil && currentSession.UserID == user.Id {
+				refreshedBundle, refreshedUser, refreshErr := service.RefreshLoginSession(
+					rawRefreshToken,
+					sid,
+					c.ClientIP(),
+					c.Request.UserAgent(),
+				)
+				if refreshErr == nil && refreshedUser != nil && refreshedUser.Id == user.Id {
+					bundle = refreshedBundle
+				}
+			}
+		}
+	}
+	if bundle == nil {
+		var err error
+		bundle, err = service.CreateLoginSession(
+			user.Id,
+			aiHubSSOLoginMethod,
+			c.ClientIP(),
+			c.Request.UserAgent(),
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	model.UpdateUserLastLoginAt(user.Id)
@@ -194,6 +218,10 @@ func aiHubSSOErrorText(errorCode string) (string, string) {
 		return "SSO 用户查询失败", "AI Hub 身份校验已通过，但查询本地用户时发生异常，请查看服务端日志。"
 	case "sso-session-error":
 		return "SSO 会话写入失败", "AI Hub 身份校验和本地用户匹配已通过，但系统写入登录会话失败，请检查 Cookie 或 Session 配置。"
+	case "sso-session-limit":
+		return "登录会话数量已达上限", "该账号的活跃登录会话已达上限。请先在已登录设备中撤销旧会话，或联系管理员处理。"
+	case "sso-session-rate-limit":
+		return "登录操作过于频繁", "该账号在当前时间窗内创建的登录会话过多，请稍后再试。"
 	case "sso-bootstrap-error":
 		return "SSO 登录态同步失败", "AI Hub 身份校验和本地用户匹配已通过，但生成前端登录态时失败，请查看服务端日志。"
 	default:
