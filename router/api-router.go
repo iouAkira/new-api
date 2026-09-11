@@ -386,5 +386,20 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
 		}
+
+		ipAuditRoute := apiRouter.Group("/ip_audit")
+		ipAuditRoute.Use(middleware.AdminAuth())
+		{
+			ipAuditRoute.GET("/audit/export", controller.ExportIpAuditAuditCsv)
+			ipAuditRoute.GET("/audit/detail", controller.GetIpAuditRecordsDetail)
+			ipAuditRoute.GET("/audit", controller.GetIpAuditRecords)
+			ipAuditRoute.POST("/status", controller.UpdateIpAuditStatus)
+			ipAuditRoute.GET("/list", controller.GetIpAuditLists)
+			ipAuditRoute.POST("/list", controller.CreateIpAuditList)
+			ipAuditRoute.DELETE("/list/:id", controller.DeleteIpAuditList)
+			ipAuditRoute.GET("/config", controller.GetIpAuditConfig)
+			ipAuditRoute.PUT("/config", controller.UpdateIpAuditConfig)
+			ipAuditRoute.POST("/alert/test", controller.TestIpAuditAlert)
+		}
 	}
 }

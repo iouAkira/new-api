@@ -30,6 +30,7 @@ import {
   Radio,
   ServerCog,
   Settings,
+  ShieldCheck,
   Ticket,
   User,
   Users,
@@ -139,6 +140,11 @@ export function useSidebarData(): SidebarData {
             title: t('Users'),
             url: '/users',
             icon: Users,
+          },
+          {
+            title: t('System Account IP Audit'),
+            url: '/ip-audit',
+            icon: ShieldCheck,
           },
           {
             title: t('Redemption Codes'),
