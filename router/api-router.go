@@ -27,6 +27,8 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
 		apiRouter.GET("/status/test", middleware.AdminAuth(), controller.TestStatus)
+		// 内部模型部署节点观测：仅管理员
+		apiRouter.GET("/deployment-nodes", middleware.AdminAuth(), middleware.RequirePermission(authz.ChannelRead), controller.GetDeploymentNodes)
 		apiRouter.GET("/notice", controller.GetNotice)
 		apiRouter.GET("/user-agreement", controller.GetUserAgreement)
 		apiRouter.GET("/privacy-policy", controller.GetPrivacyPolicy)
@@ -59,6 +61,8 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), middleware.DisableCache(), middleware.TryUserAuth(), controller.HandleOAuth)
 		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
 
+		apiRouter.GET("/auth/aihub-sso/entry", middleware.CriticalRateLimit(), controller.AIHubSSOEntry)
+
 		apiRouter.POST("/stripe/webhook", anonymousRequestBodyLimit, controller.StripeWebhook)
 		apiRouter.POST("/creem/webhook", anonymousRequestBodyLimit, controller.CreemWebhook)
 		apiRouter.POST("/waffo/webhook", anonymousRequestBodyLimit, controller.WaffoWebhook)
@@ -72,6 +76,7 @@ func SetApiRouter(router *gin.Engine) {
 
 		userRoute := apiRouter.Group("/user")
 		{
+			userRoute.GET("/auth/aihub-sso/entry", middleware.CriticalRateLimit(), controller.AIHubSSOEntry)
 			userRoute.POST("/auth/refresh", middleware.SessionCookieOriginGuard(), middleware.CriticalRateLimit(), middleware.DisableCache(), controller.RefreshAuth)
 			userRoute.POST("/auth/logout", middleware.SessionCookieOriginGuard(), middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AuthLogout)
 			userRoute.POST("/register", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, middleware.TurnstileCheck(), controller.Register)
@@ -425,6 +430,21 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.PUT("/:id/name", controller.UpdateDeploymentName)
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
+		}
+
+		ipAuditRoute := apiRouter.Group("/ip_audit")
+		ipAuditRoute.Use(middleware.AdminAuth())
+		{
+			ipAuditRoute.GET("/audit/export", controller.ExportIpAuditAuditCsv)
+			ipAuditRoute.GET("/audit/detail", controller.GetIpAuditRecordsDetail)
+			ipAuditRoute.GET("/audit", controller.GetIpAuditRecords)
+			ipAuditRoute.POST("/status", controller.UpdateIpAuditStatus)
+			ipAuditRoute.GET("/list", controller.GetIpAuditLists)
+			ipAuditRoute.POST("/list", controller.CreateIpAuditList)
+			ipAuditRoute.DELETE("/list/:id", controller.DeleteIpAuditList)
+			ipAuditRoute.GET("/config", controller.GetIpAuditConfig)
+			ipAuditRoute.PUT("/config", controller.UpdateIpAuditConfig)
+			ipAuditRoute.POST("/alert/test", controller.TestIpAuditAlert)
 		}
 	}
 }

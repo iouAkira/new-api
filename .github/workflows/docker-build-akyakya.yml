@@ -1,0 +1,142 @@
+name: Publish Docker image to akyakya/new-api
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to build (e.g., main or feature/aihub-sso)'
+        required: true
+        type: string
+
+jobs:
+  build_single_arch:
+    name: Build & push (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    outputs:
+      image_tag: ${{ steps.version.outputs.image_tag }}
+
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Resolve branch & write VERSION
+        id: version
+        shell: bash
+        run: |
+          BRANCH="${{ github.event.inputs.branch }}"
+          if [ -z "$BRANCH" ]; then
+            echo "::error::Branch name is required"
+            exit 1
+          fi
+
+          # Docker tag 不能包含斜杠等分支名常见字符，这里统一转成短横线。
+          IMAGE_TAG="$(echo "$BRANCH" | sed 's#^refs/heads/##' | tr '/:@ ' '----')"
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "::error::Branch '$BRANCH' cannot be converted to a Docker tag"
+            exit 1
+          fi
+
+          echo "BRANCH=${BRANCH}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "${IMAGE_TAG}" > VERSION
+          echo "Building branch: ${BRANCH} as image tag: ${IMAGE_TAG} for ${{ matrix.arch }}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: akyakya/new-api
+
+      - name: Build & push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            akyakya/new-api:${{ env.IMAGE_TAG }}-${{ matrix.arch }}
+            akyakya/new-api:latest-${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image with cosign
+        run: cosign sign --yes akyakya/new-api@${{ steps.build.outputs.digest }}
+
+      - name: Image summary
+        run: |
+          echo "### Docker Image Digest (${{ matrix.arch }})" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "akyakya/new-api:${IMAGE_TAG}-${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  create_manifests:
+    name: Create multi-arch manifests
+    needs: [build_single_arch]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set version
+        run: echo "IMAGE_TAG=${{ needs.build_single_arch.outputs.image_tag }}" >> "$GITHUB_ENV"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create & push manifest (branch)
+        run: |
+          docker buildx imagetools create \
+            -t akyakya/new-api:${IMAGE_TAG} \
+            akyakya/new-api:${IMAGE_TAG}-amd64 \
+            akyakya/new-api:${IMAGE_TAG}-arm64
+
+      - name: Create & push manifest (latest)
+        run: |
+          docker buildx imagetools create \
+            -t akyakya/new-api:latest \
+            akyakya/new-api:latest-amd64 \
+            akyakya/new-api:latest-arm64
+
+      - name: Manifest summary
+        run: |
+          echo "### Multi-arch Manifest" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker buildx imagetools inspect akyakya/new-api:${IMAGE_TAG} >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

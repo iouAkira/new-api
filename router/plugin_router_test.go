@@ -915,3 +915,17 @@ func TestSecurityRoutesDisableCachingBeforeAuthentication(t *testing.T) {
 		})
 	}
 }
+
+func TestWebFallbackDispatchesAIHubSSOBeforeSPA(t *testing.T) {
+	t.Setenv("APP_AUTH_AIHUB_SSO_ENABLED", "true")
+	router := gin.New()
+	SetWebRouter(router, WebAssets{IndexPage: []byte("dashboard")}, func(c *gin.Context) { c.Next() })
+	response := performPluginRequest(router, http.MethodGet, "/security?ai-hub-token=test-token")
+	assert.Equal(t, http.StatusOK, response.Code)
+	assert.Contains(t, response.Body.String(), "/api/user/auth/aihub-sso/entry?")
+	assert.Contains(t, response.Header().Get("Cache-Control"), "no-store")
+	assert.NotContains(t, response.Body.String(), "dashboard")
+	t.Setenv("APP_AUTH_AIHUB_SSO_ENABLED", "false")
+	response = performPluginRequest(router, http.MethodGet, "/security?ai-hub-token=test-token")
+	assert.Equal(t, "dashboard", response.Body.String())
+}
