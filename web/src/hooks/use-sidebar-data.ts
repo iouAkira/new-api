@@ -26,6 +26,7 @@ import {
   Key,
   LayoutDashboard,
   ListTodo,
+  MapPin,
   MessageSquare,
   PlugZap,
   Radio,
@@ -133,6 +134,11 @@ export function useSidebarData(): SidebarData {
         title: t('Admin'),
         items: [
           {
+            title: t('Model Nodes'),
+            url: '/model-nodes',
+            icon: MapPin,
+          },
+          {
             title: t('Channels'),
             url: '/channels',
             icon: Radio,
@@ -146,6 +152,11 @@ export function useSidebarData(): SidebarData {
             title: t('Users'),
             url: '/users',
             icon: Users,
+          },
+          {
+            title: t('System Account IP Audit'),
+            url: '/ip-audit',
+            icon: ShieldCheck,
           },
           {
             title: t('Redemption Codes'),

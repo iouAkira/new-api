@@ -33,6 +33,7 @@ func SetWebRouter(router *gin.Engine, assets WebAssets, pluginDispatcher gin.Han
 		},
 		middleware.AccessTokenAudit(),
 		middleware.GlobalWebRateLimit(frontendFS),
+		middleware.AIHubSSOWebEntry(),
 		middleware.Cache(),
 		middleware.ServeFrontendFiles(frontendFS),
 		func(c *gin.Context) {
