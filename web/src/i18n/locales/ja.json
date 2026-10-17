@@ -421,6 +421,8 @@
     "Aggregation bucket": "集計バケット",
     "AGPL v3.0 License": "AGPL v3.0ライセンス",
     "AI Application Infrastructure Foundation": "AI アプリケーションのインフラ基盤",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO がグループ {{group}} に無制限のデフォルトトークンを作成しました",
+    "AI Hub SSO sign-up bonus {{quota}}": "AI Hub SSO 登録ボーナス {{quota}}",
     "Already checked in today": "本日はすでにチェックイン済みです",
     "AI model testing environment": "AIモデルテスト環境",
     "AI models": "AIモデル",

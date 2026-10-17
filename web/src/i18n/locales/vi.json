@@ -421,6 +421,8 @@
     "Aggregation bucket": "Khoảng tổng hợp",
     "AGPL v3.0 License": "Giấy phép AGPL v3.0",
     "AI Application Infrastructure Foundation": "Nền tảng hạ tầng ứng dụng AI",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO đã tạo token mặc định không giới hạn cho nhóm {{group}}",
+    "AI Hub SSO sign-up bonus {{quota}}": "Thưởng đăng ký AI Hub SSO {{quota}}",
     "Already checked in today": "Hôm nay bạn đã điểm danh",
     "AI model testing environment": "Môi trường thử nghiệm mô hình AI",
     "AI models": "mô hình AI",

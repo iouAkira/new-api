@@ -421,6 +421,8 @@
     "Aggregation bucket": "Интервал агрегации",
     "AGPL v3.0 License": "Лицензия AGPL v3.0",
     "AI Application Infrastructure Foundation": "Инфраструктурная основа для ИИ-приложений",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO создал безлимитный токен по умолчанию для группы {{group}}",
+    "AI Hub SSO sign-up bonus {{quota}}": "Бонус за регистрацию AI Hub SSO: {{quota}}",
     "Already checked in today": "Вы уже отметились сегодня",
     "AI model testing environment": "Среда тестирования ИИ моделей",
     "AI models": "Модели ИИ",

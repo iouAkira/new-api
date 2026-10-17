@@ -421,6 +421,8 @@
     "Aggregation bucket": "聚合时间桶",
     "AGPL v3.0 License": "AGPL v3.0 协议",
     "AI Application Infrastructure Foundation": "人工智能应用基座",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO 自动开户创建 {{group}} 分组无限制默认令牌",
+    "AI Hub SSO sign-up bonus {{quota}}": "AI Hub SSO 自动开户赠送 {{quota}}",
     "Already checked in today": "今日已签到",
     "AI model testing environment": "AI模型测试环境",
     "AI models": "AI 模型",

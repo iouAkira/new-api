@@ -421,6 +421,8 @@
     "Aggregation bucket": "Fenêtre d’agrégation",
     "AGPL v3.0 License": "Licence AGPL v3.0",
     "AI Application Infrastructure Foundation": "Socle d'infrastructure pour applications d'IA",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO a créé un jeton par défaut illimité pour le groupe {{group}}",
+    "AI Hub SSO sign-up bonus {{quota}}": "Bonus d'inscription AI Hub SSO {{quota}}",
     "Already checked in today": "Vous avez déjà fait l'enregistrement aujourd'hui",
     "AI model testing environment": "Environnement de test de modèle IA",
     "AI models": "Modèles d'IA",

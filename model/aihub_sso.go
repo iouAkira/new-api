@@ -2,10 +2,10 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
 	"gorm.io/gorm"
@@ -54,7 +54,7 @@ func CreateAIHubSSOUser(employNo string, displayName string, initialBalanceRMB i
 		if err := IncreaseUserQuota(user.Id, initialQuota, true); err != nil {
 			return nil, err
 		}
-		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("AI Hub SSO 自动开户赠送 %d 元人民币钱包余额", initialBalanceRMB))
+		RecordLog(user.Id, LogTypeSystem, common.NewMessage("AI Hub SSO sign-up bonus {{quota}}", map[string]any{"quota": logger.FormatQuota(initialQuota)}))
 	}
 	if err := createAIHubSSODefaultToken(user, group); err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func createAIHubSSODefaultToken(user *User, group string) error {
 	if err := token.Insert(); err != nil {
 		return err
 	}
-	RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("AI Hub SSO 自动开户创建 %s 分组无限制默认令牌", group))
+	RecordLog(user.Id, LogTypeSystem, common.NewMessage("AI Hub SSO created an unlimited default token for group {{group}}", map[string]any{"group": group}))
 	return nil
 }
 

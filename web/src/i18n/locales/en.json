@@ -421,6 +421,8 @@
     "Aggregation bucket": "Aggregation bucket",
     "AGPL v3.0 License": "AGPL v3.0 License",
     "AI Application Infrastructure Foundation": "AI Application Infrastructure Foundation",
+    "AI Hub SSO created an unlimited default token for group {{group}}": "AI Hub SSO created an unlimited default token for group {{group}}",
+    "AI Hub SSO sign-up bonus {{quota}}": "AI Hub SSO sign-up bonus {{quota}}",
     "Already checked in today": "Already checked in today",
     "AI model testing environment": "AI model testing environment",
     "AI models": "AI models",
