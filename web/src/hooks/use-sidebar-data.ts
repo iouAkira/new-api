@@ -26,6 +26,7 @@ import {
   Key,
   LayoutDashboard,
   ListTodo,
+  MapPin,
   MessageSquare,
   PlugZap,
   Radio,
@@ -132,6 +133,11 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
         id: 'admin',
         title: t('Admin'),
         items: [
+          {
+            title: t('Model Nodes'),
+            url: '/model-nodes',
+            icon: MapPin,
+          },
           {
             title: t('Channels'),
             url: '/channels',
