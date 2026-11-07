@@ -149,6 +149,11 @@ export function useSidebarData(badges: SidebarBadges = {}): SidebarData {
             icon: Users,
           },
           {
+            title: t('System Account IP Audit'),
+            url: '/ip-audit',
+            icon: ShieldCheck,
+          },
+          {
             title: t('Redemption Codes'),
             url: '/redemption-codes',
             icon: Ticket,
